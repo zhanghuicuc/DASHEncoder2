@@ -1,0 +1,112 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="AnyOption" Collapsed="true">
+    <Position X="7.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ZOwA0kREBpAQBmCQSH8IrEOOsAIW8C4EYCsCokHBYFc=</HashCode>
+      <FileName>AnyOption.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="DASHHelper" Collapsed="true">
+    <Position X="9.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>DASHHelper.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="AbstractAudioEncoder">
+    <Position X="4.75" Y="7.25" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAEAAAAARAAAAAAAAAAAAAAAAgAAAAAAREAGAQAg=</HashCode>
+      <FileName>encoder\AbstractAudioEncoder.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="AbstractEncoder">
+    <Position X="3" Y="3" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>ABAAAEEAAABAAACQAAAAAAAAAABAQBAEAAgCAAAAAAA=</HashCode>
+      <FileName>encoder\AbstractEncoder.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="AbstractVideoEncoder">
+    <Position X="1.25" Y="7.25" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAwGAAAAABAIIwQAAGAAAAAAEAEBoAABAAQGAEACA=</HashCode>
+      <FileName>encoder\AbstractVideoEncoder.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="EncoderFactory">
+    <Position X="7.75" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAEQAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>encoder\EncoderFactory.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="AACEncoder">
+    <Position X="4.75" Y="13.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>encoder\aacEncoder.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="IEncoder">
+    <Position X="3" Y="0.5" Width="1.75" />
+    <Compartments>
+      <Compartment Name="Nested Types" Collapsed="false" />
+    </Compartments>
+    <NestedTypes>
+      <Enum Name="IEncoder::EncoderType" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>encoder\IEncoder.h</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>encoder\IEncoder.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="vp8Encoder">
+    <Position X="0.5" Y="13.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>encoder\vp8Encoder.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="H264Encoder">
+    <Position X="2.75" Y="13.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAEEAAAAAABAAAAAQAAABIAAAEgAAAAEAAAAAIAA=</HashCode>
+      <FileName>encoder\h264Encoder.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MPDGenerator" Collapsed="true">
+    <Position X="9.5" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BAAACAgACABAEIiDCgFAAAAAIADAAAAECAAIBACACAI=</HashCode>
+      <FileName>mpdgenerator\MPDGenerator.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="AbstractMultiplexer">
+    <Position X="8.5" Y="13.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAACAAAAAABBgAAAAAAAABAAAABAAAAEAAABEAAACoA=</HashCode>
+      <FileName>multiplexer\AbstractMultiplexer.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="IMultiplexer">
+    <Position X="8.5" Y="12" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>multiplexer\IMultiplexer.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MP4BoxMultiplexer">
+    <Position X="8.5" Y="17.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAgAAAAAAAABAAAAAAAAAAAAgAAAAAAAA=</HashCode>
+      <FileName>multiplexer\MP4BoxMultiplexer.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Font Name="Microsoft YaHei UI" Size="9" />
+</ClassDiagram>

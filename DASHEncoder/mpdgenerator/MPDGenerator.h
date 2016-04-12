@@ -28,7 +28,7 @@
 #define MPDGENERATOR_H_
 
 #include "../DASHHelper.h"
-#include <map>
+#include <vector>
 
 class MPDGenerator
 {
@@ -45,7 +45,7 @@ class MPDGenerator
         MPDGenerator();
         virtual ~MPDGenerator();
 
-		std::string		Segment(std::map<int, std::string> audio_files, std::map<int, std::string> video_files);
+		std::string		Segment(std::vector<std::string> muxed_files);
 
 		void            setOutputDir(std::string out);
 		std::string     getOutputDir();

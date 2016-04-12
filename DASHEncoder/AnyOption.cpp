@@ -725,7 +725,7 @@ AnyOption::matchOpt( char *opt )
 			       optiontype[i] == COMMAND_FLAG )
 			{ /* found flag, set it */
 				setFlagOn( opt );
-				return -1;
+				return 1;// -1;
 			}
 		}
 	}
@@ -747,7 +747,7 @@ AnyOption::matchChar( char c )
 			}else if( optchartype[i] == COMMON_FLAG ||
 				  optchartype[i] == COMMAND_FLAG ) { /* a flag store and keep scanning */
 				setFlagOn( c );
-				return false;
+				return true;// false;
 			}
 		}
 	}

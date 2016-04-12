@@ -34,24 +34,22 @@
 class AbstractMultiplexer : public IMultiplexer
 {
     protected:
-        std::string     input;
-        std::string     outputDir;
-        std::string     audioFile;
+        std::string     vinput;
+		std::string     ainput ;
+		std::string     outputDir;	
 
     public:
         AbstractMultiplexer();
         virtual ~AbstractMultiplexer();
 
-        virtual     std::string multiplex       (std::string input) = 0;
+		virtual     std::string multiplex(std::string vinput, std::string ainput) = 0;
         virtual     std::string multiplex       () = 0;
 
-        void            setInput                (std::string in);
-        std::string     getInput                ();
+		void            setVinput				(std::string vinput);
+        std::string     getVinput               ();
+		void            setAinput				(std::string ainput);
+        std::string     getAinput				();
         void            setOutputDir            (std::string out);
-        std::string     getOutputDir            ();
-        void            setAudioFile            (std::string file);
-        std::string     getAudioFile            ();
-
-
+        std::string     getOutputDir            (); 
 };
 #endif /* ABSTRACTMULTIPLEXER_H_ */

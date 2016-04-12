@@ -40,6 +40,9 @@
     <ClCompile Include="multiplexer\AbstractMultiplexer.cpp" />
     <ClCompile Include="multiplexer\MP4BoxMultiplexer.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{D67D723B-A65F-482F-9A9F-AD759D018D72}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>

@@ -49,4 +49,9 @@ void    AbstractAudioEncoder::setSamplingRate(int r){
 int     AbstractAudioEncoder::getSamplingRate(){
     return this->srate;
 }
-
+void            AbstractAudioEncoder::setAcodec(std::string acodec){
+	this->acodec = acodec;
+}
+std::string     AbstractAudioEncoder::getAcodec(){
+	return this->acodec;
+}

@@ -33,7 +33,7 @@ std::string     H264Encoder::encode(std::string in){
 }
 //do the video encoding stuff and return the encoded file name (together with the outputdir)
 std::string     H264Encoder::encode(){
-	std::cout << "Video FFmpeg Encoding @ " << this->bitrate << "kbps\n";
+	std::cout << "H264 Video FFmpeg Encoding @ " << this->bitrate << "kbps\n";
 
     std::string ffmpeg = "ffmpeg -y ";
 	
@@ -41,14 +41,14 @@ std::string     H264Encoder::encode(){
 	ffmpeg.append(this->input);
 	ffmpeg.append("\" ");
 	
-	/*ffmpeg.append("-s ");
+	ffmpeg.append("-s ");
 	ffmpeg.append(DASHHelper::itos(this->iwidth));
 	ffmpeg.append("x");
 	ffmpeg.append(DASHHelper::itos(this->iheight));
-	ffmpeg.append(" ");*/
+	ffmpeg.append(" ");
 
 	ffmpeg.append("-vcodec ");
-	ffmpeg.append(this->codec);
+	ffmpeg.append(this->vcodec);
 	ffmpeg.append(" ");
 
 	ffmpeg.append("-preset ");
@@ -133,12 +133,6 @@ void            H264Encoder::setProfile(std::string pro){
 }
 std::string     H264Encoder::getProfile(){
     return this->profile;
-}
-void            H264Encoder::setCodec(std::string c){
-	this->codec = c;
-}
-std::string     H264Encoder::getCodec(){
-	return this->codec;
 }
 void            H264Encoder::setPasses(int p){
 	this->passes = p;

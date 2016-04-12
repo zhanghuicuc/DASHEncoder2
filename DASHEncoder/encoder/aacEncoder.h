@@ -33,15 +33,11 @@
 class AACEncoder: public AbstractAudioEncoder
 {
     private:
-        std::string codec;
-
+        
     public:
 
         std::string     encode              (std::string input);
         std::string     encode              ();
-
-        void            setCodec            (std::string c);
-        std::string     getCodec            ();
 };
 
 #endif /* AACENCODER_H_ */

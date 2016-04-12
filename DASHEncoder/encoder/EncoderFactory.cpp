@@ -7,7 +7,7 @@
  * Authors: Stefan Lederer <stefan.lederer@aau.at>
  *          Christian Timmerer  <christian.timmerer@itec.uni-klu.ac.at>
  *
- * Modified on: Dec 28, 2015
+ * Modified on: Apr 12, 2016
  * Authors: Hui Zhang <zhanghuicuc@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -47,10 +47,10 @@ IEncoder* EncoderFactory::getEncoder (AnyOption* opt, IEncoder::EncoderType type
         e->setFps(atoi(opt->getValue("fps")));
         e->setPasses(atoi(opt->getValue("passes")));
         e->setInput(opt->getValue("input"));
-        //e->setiWidth(atoi(opt->getValue("input-width")));
-		//e->setiHeight(atoi(opt->getValue("input-height")));
+        e->setiWidth(atoi(opt->getValue("input-width")));
+		e->setiHeight(atoi(opt->getValue("input-height")));
         e->setOutputDir(opt->getValue("dest-directory"));
-		e->setCodec(opt->getValue("video-codec"));
+		e->setVcodec(opt->getValue("video-codec"));
 
         retval = e;
 
@@ -62,7 +62,7 @@ IEncoder* EncoderFactory::getEncoder (AnyOption* opt, IEncoder::EncoderType type
         AACEncoder* a = new AACEncoder();
         a->setInput(opt->getValue("audio-input"));
         a->setOutputDir(opt->getValue("dest-directory"));
-        a->setCodec(opt->getValue("audio-codec"));
+        a->setAcodec(opt->getValue("audio-codec"));
         retval = a;
     }
 

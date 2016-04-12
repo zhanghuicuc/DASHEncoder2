@@ -39,53 +39,48 @@ MP4BoxMultiplexer::~MP4BoxMultiplexer()
     // TODO Auto-generated destructor stub
 }
 
-std::string     MP4BoxMultiplexer::multiplex                  (std::string in)
+std::string     MP4BoxMultiplexer::multiplex(std::string vinput, std::string ainput)
 {
-    this->input = in;
-    return this->multiplex();
+    this->vinput = vinput;
+	this->ainput = ainput;
+	return this->multiplex();
 }
 
 std::string     MP4BoxMultiplexer::multiplex                  (){
 
-    std::cout << "MP4Box multiplexing : " << this->input << " \n";
+    std::cout << "MP4Box multiplexing : " << this->vinput << "and " << this->ainput<< " \n";
 
     std::string mp4box = "MP4Box ";
     mp4box.append("-add \"");
-    mp4box.append(this->input);
+    mp4box.append(this->vinput);
     mp4box.append("\" \"");
-    mp4box.append(this->input.substr(0,this->input.find_last_of(".")));
-    mp4box.append(".mp4\"");
+	mp4box.append("-add \"");
+	mp4box.append(this->ainput);
+	mp4box.append("\" \"");
+	mp4box.append(this->vinput.substr(0, this->vinput.find_last_of("_")));
+	std::string vbitrate = this->vinput.substr(this->vinput.find_last_of("_"), this->vinput.find_last_of("_") - this->vinput.find_last_of(".") - 1);
+	std::string abitrate = this->ainput.substr(this->ainput.find_last_of("_"), this->ainput.find_last_of("_") - this->ainput.find_last_of(".") - 1);
+	mp4box.append("_" + vbitrate + "_" + abitrate);
+	mp4box.append(".mp4\"");
 
     std::cout << "mp4box: " <<mp4box << "\n";
     system(mp4box.c_str());
 
-    if(this->audioFile.size()>0){
-        std::cout << "MP4Box multiplexing Audio:" << this->audioFile << " \n";
-
-        std::string mp4box = "MP4Box ";
-        mp4box.append("-add \"");
-        mp4box.append(this->audioFile);
-        mp4box.append("\" \"");
-        mp4box.append(this->input.substr(0,this->input.find_last_of(".")));
-        mp4box.append(".mp4\"");
-
-        std::cout << "mp4box: " <<mp4box << "\n";
-        system(mp4box.c_str());
-    }
-
-    std::cout << "MP4Box Cleaning ... \n";
+   std::cout << "MP4Box Cleaning ... \n";
 
    mp4box = "MP4Box ";
    mp4box.append("-no-sys ");
    mp4box.append(" \"");
-   mp4box.append(this->input.substr(0,this->input.find_last_of(".")));
+   mp4box.append(this->vinput.substr(0, this->vinput.find_last_of("_")));
+   mp4box.append("_" + vbitrate + "_" + abitrate);
    mp4box.append(".mp4\"");
 
    std::cout << "mp4box: " <<mp4box << "\n";
    if (system(mp4box.c_str()) < 0)
 	   return DASHHelper::itos(-1);
 
-   std::string out = this->input.substr(0, this->input.find_last_of("."));
+   std::string out = this->vinput.substr(0, this->vinput.find_last_of("."));
+   out.append("_" + vbitrate + "_" + abitrate);
    out.append(".mp4");
    return out;
 }

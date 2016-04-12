@@ -29,13 +29,13 @@
 #define IMULTIPLEXER_H_
 
 
-
+#include <map>
 #include <iostream>
 
 class IMultiplexer
 {
     public:
-        virtual std::string multiplex                  (std::string input) = 0;
+		virtual std::string multiplex					(std::string vinput, std::string ainput) = 0;
         virtual std::string multiplex                  () = 0;
 };
 

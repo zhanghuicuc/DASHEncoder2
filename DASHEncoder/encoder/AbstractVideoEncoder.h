@@ -42,6 +42,7 @@ class AbstractVideoEncoder : public AbstractEncoder
 		int					iheight;
         int                 owidth;
         int                 oheight;     
+		std::string			vcodec;
 
     public:
         AbstractVideoEncoder();
@@ -62,6 +63,8 @@ class AbstractVideoEncoder : public AbstractEncoder
 		int             getoWidth			();
 		void            setoHeight			(int oh);
 		int             getoHeight			();
+		void            setVcodec			(std::string vcodec);
+		std::string     getVCodec			();
 		
 };
 #endif /* ABSTRACTVIDEOENCODER_H_ */

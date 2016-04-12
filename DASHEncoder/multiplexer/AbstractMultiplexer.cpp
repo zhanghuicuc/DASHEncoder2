@@ -29,32 +29,30 @@
 
 AbstractMultiplexer::AbstractMultiplexer()
 {
-    this->audioFile = "";
 }
 
 AbstractMultiplexer::~AbstractMultiplexer()
 {
     // TODO Auto-generated destructor stub
 }
-void AbstractMultiplexer::setInput(std::string in)
+void AbstractMultiplexer::setVinput							(std::string vinput)
 {
-    this->input = in;
+	this->vinput = vinput;
 }
-std::string AbstractMultiplexer::getInput()
+std::string AbstractMultiplexer::getVinput						()
 {
-    return this->input;
+	return this->vinput;
 }
-
+void            AbstractMultiplexer::setAinput				(std::string ainput){
+	this->ainput = ainput;
+}
+std::string     AbstractMultiplexer::getAinput				(){
+	return this->ainput;
+}
 void            AbstractMultiplexer::setOutputDir        (std::string out){
     this->outputDir = out;
 }
 std::string     AbstractMultiplexer::getOutputDir        (){
     return this->outputDir;
-}
-void            AbstractMultiplexer::setAudioFile            (std::string file){
-    this->audioFile = file;
-}
-std::string     AbstractMultiplexer::getAudioFile            (){
-    return this->audioFile;
 }
 

@@ -75,5 +75,12 @@ void            AbstractVideoEncoder::setoHeight(int oh){
 int             AbstractVideoEncoder::getoHeight(){
 	return this->oheight;
 }
+void            AbstractVideoEncoder::setVcodec(std::string vcodec){
+	this->vcodec = vcodec;
+}
+std::string     AbstractVideoEncoder::getVCodec(){
+	return this->vcodec;
+}
+
 
 

@@ -33,17 +33,14 @@
 class H264Encoder : public AbstractVideoEncoder
 {
     protected:
-		std::string			codec;
-        std::string         preset;
+		std::string         preset;
         std::string         profile;
 		int                 passes;
     public:
 
         std::string     encode              (std::string input);
         std::string     encode              ();
-		void            setCodec			(std::string c);
-		std::string     getCodec			();
-        void            setPreset           (std::string pre);
+		void            setPreset           (std::string pre);
         std::string     getPreset           ();
         void            setProfile          (std::string pro);
         std::string     getProfile          ();		

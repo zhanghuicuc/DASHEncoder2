@@ -36,7 +36,7 @@ class AbstractAudioEncoder: public AbstractEncoder
 
         int channels;
         int srate;	//sample rate
-
+		std::string acodec;
 
     public:
         AbstractAudioEncoder();
@@ -49,6 +49,8 @@ class AbstractAudioEncoder: public AbstractEncoder
         int     getChannels();
         void    setSamplingRate(int srate);
         int     getSamplingRate();
+		void            setAcodec(std::string acodec);
+		std::string     getAcodec();
 
 };
 

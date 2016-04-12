@@ -108,7 +108,7 @@ int MPDGenerator::getminBufferTime()
 {
 	return this->minBufferTime;
 }
-std::string     MPDGenerator::Segment(std::map<int, std::string> audio_files, std::map<int, std::string> video_files){
+std::string     MPDGenerator::Segment(std::vector<std::string> muxed_files){
 
 	std::cout << "MP4Box segmentation: \n" ;
 
@@ -153,22 +153,12 @@ std::string     MPDGenerator::Segment(std::map<int, std::string> audio_files, st
 	mp4box.append("media_$RepresentationID$_$Bandwidth$/%s");
 	mp4box.append(" ");
 
-	std::map<int, std::string>::const_iterator map_it = audio_files.begin();
-	while (map_it != audio_files.end())
+	std::vector<std::string>::const_iterator it = muxed_files.begin();
+	while (it != muxed_files.end())
 	{
 		mp4box.append("\"");
-		mp4box.append(map_it->second);
-		mp4box.append("#audio\" ");
-		++map_it;
-	}
-
-	map_it = video_files.begin();
-	while (map_it != video_files.end())
-	{
-		mp4box.append("\"");
-		mp4box.append(map_it->second);
-		mp4box.append("#video\" ");
-		++map_it;
+		mp4box.append(*it);
+		++it;
 	}
 
 	std::cout << "mp4box: " << mp4box << "\n";

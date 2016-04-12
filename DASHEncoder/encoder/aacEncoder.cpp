@@ -35,7 +35,7 @@ std::string     AACEncoder::encode(std::string input){
 
 //do the audio encoding stuff and return the encoded file name (together with the outputdir)
 std::string     AACEncoder::encode(){
-    std::cout << "AUDIO AAC Encoding: " << this->input << " \n";
+	std::cout << "AAC Audio FFmpeg Encoding @ " << this->bitrate << "kbps\n";
 
     std::string out = "";
 
@@ -46,7 +46,7 @@ std::string     AACEncoder::encode(){
     aac.append("\" ");
 
     aac.append("-acodec ");
-    aac.append(this->codec);
+    aac.append(this->acodec);
     aac.append(" ");
 
     aac.append("-ac ");
@@ -88,9 +88,4 @@ std::string     AACEncoder::encode(){
 
     return out;
 }
-void            AACEncoder::setCodec(std::string c){
-    this->codec = c;
-}
-std::string     AACEncoder::getCodec(){
-    return this->codec;
-}
+

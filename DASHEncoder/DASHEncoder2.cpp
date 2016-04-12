@@ -11,49 +11,38 @@
 #include <map>
 //#include "mysql/mysql.h"
 
-int parse(int argc, char* argv[]);
+int parse(AnyOption *opt, int argc, char* argv[]);
 void setHelp(AnyOption*);
-void setOptions(AnyOption*);
+void setFileOptions(AnyOption*);
+void setCommandOptions(AnyOption*);
 IEncoder::EncoderType getEncoder(std::string);
 
-AnyOption *opt;
+int TransAudio(AnyOption *opt, AbstractAudioEncoder* a_enc, std::map<int, std::string> transcoded_audio_files);
+int TransVideo(AnyOption *opt, AbstractVideoEncoder* v_enc, std::map<int, std::string> transcoded_video_files);
+int AVMux(AnyOption *opt, std::map<int, int> av_mux_mapping, MP4BoxMultiplexer* muxer,
+	std::map<int, std::string> transcoded_video_files,
+	std::map<int, std::string> transcoded_audio_files,
+	std::vector<std::string> muxed_files);
+int MpdGen(MPDGenerator* mpdgen, std::vector<std::string> muxed_files, std::string mpd_path);
 
 int main(int argc, char* argv[])
 {
-	int ret= parse(argc, argv);
-	if (ret < 0)
-	{
-		std::cout << "ERROR!\n";
-		return -1;
-	}
-    return 0;
-}
+	std::cout << "======================DASH ENCODER======================\n" << std::endl;
+	std::cout << "Usage: " << std::endl;
+	std::cout << " -h  Print help " << std::endl;
+	std::cout << " -i  Input config file" << std::endl;
 
-int parse(int argc, char* argv[])
-{
-    std::cout << "==========DASH ENCODER===============\n";
-    //set the options and flags,
-	//read the config file or command line, 
-	//then get the type-value pairs automatically
 	AnyOption *opt = new AnyOption();
 
-    /* COMMAND LINE PREFERENCES  */
-    opt->setVerbose(); /* print warnings about unknown options */
-    opt->autoUsagePrint(true); /* print usage for bad options */
+	int ret = parse(opt, argc, argv);
+	if (ret < 0)
+	{
+		std::cout << "ERROR! Cant Parsing Cmd Line and Config File\n";
+		return -1;
+	}
 
-    /* SET THE USAGE/HELP   */
-    setHelp(opt);
 
-    /* SET THE OPTION STRINGS/CHARACTERS */
-    setOptions(opt);
-
-    /* PROCESS THE RESOURCE FILE */
-    opt->processFile("./DASHEncoder.config");
-    /* PROCESS THE COMMANDLINE, cover the same option set in config file */
-    opt->processCommandArgs(argc, argv);
-
-    /* Run DASH Encoding */
-    EncoderFactory* encoder_factory= new EncoderFactory();
+	EncoderFactory* encoder_factory = new EncoderFactory();
 	IEncoder::EncoderType video_encoder_type = getEncoder(opt->getValue("video-encoder"));
 	if (video_encoder_type == IEncoder::ERROR)
 	{
@@ -66,443 +55,302 @@ int parse(int argc, char* argv[])
 		std::cout << "ERROR£¡Unsupported Audio Encoder\n";
 		return -1;
 	}
+	AbstractVideoEncoder* v_enc = (AbstractVideoEncoder*)encoder_factory->getEncoder(opt, video_encoder_type);
+	AbstractAudioEncoder* a_enc = (AbstractAudioEncoder*)encoder_factory->getEncoder(opt, audio_encoder_type);
 
-    AbstractVideoEncoder* ve = (AbstractVideoEncoder*)encoder_factory->getEncoder(opt, video_encoder_type);
-    AbstractAudioEncoder* ae = (AbstractAudioEncoder*)encoder_factory->getEncoder(opt, audio_encoder_type);
-    MPDGenerator* mpdgen = new MPDGenerator();
-    MP4BoxMultiplexer* m = new MP4BoxMultiplexer();
-
-    std::map<int, std::string> audio_files;
-	std::map<int, std::string> video_files;
-    std::map<int, int> av_mux_mapping;
-
-    /******* MySQL Support *******/
-    /*MYSQL_RES *result;
-
-    MYSQL_ROW row;
-
-    MYSQL *connection, mysql;
-
-    */
-
+	MPDGenerator* mpdgen = new MPDGenerator();
 	mpdgen->setOutputDir(opt->getValue("dest-directory"));
-	mpdgen->setRAPAligned(opt->getValue("rap-aligned"));// (opt->getFlag("rap-aligned"));
-	mpdgen->setTemplateUrl(opt->getValue("use-template-url"));// (opt->getFlag("use-template-url"));
+	mpdgen->setRAPAligned(opt->getValue("rap-aligned"));
+	mpdgen->setTemplateUrl(opt->getValue("use-template-url"));
 	mpdgen->setFragSize(atoi(opt->getValue("fragment-size")));
 	mpdgen->setSegSize(atoi(opt->getValue("segment-size")));
 	mpdgen->setMpdName(opt->getValue("mpd-name"));
 	mpdgen->setBaseUrl(opt->getValue("base-url"));
 	mpdgen->setminBufferTime(atoi(opt->getValue("minBufferTime")));
-	ve->setGOPSize(ve->getFps()*mpdgen->getSegSize() / 1000);
-	m->setOutputDir(opt->getValue("dest-directory"));
-	
-    std::string h264file;
-	std::string mp4file_h264;
-	std::string aac_file;
-	std::string mp4file_aac;
-    //vector<std::string> mpds;   
-    //ifstream infile;
+	v_enc->setGOPSize(v_enc->getFps()*mpdgen->getSegSize() / 1000);
 
-    std::string exp_name = opt->getValue("dest-directory");
-    exp_name.append(opt->getValue("mpd-name"));
-
+	MP4BoxMultiplexer* muxer = new MP4BoxMultiplexer();
+	muxer->setOutputDir(opt->getValue("dest-directory"));
+	std::string outdir = muxer->getOutputDir();
+	outdir.append(opt->getValue("mpd-name"));
 	std::string mk = "mkdir \"";
-	mk.append(exp_name.substr(0, exp_name.find_last_of("/")));
+	mk.append(outdir.substr(0, outdir.find_last_of("/")));
 	mk.append("\"");
 	system(mk.c_str());
 
-    /************* AUDIO/VIDEO MULTIPLEXING INFORMATION ******************************/
-    /*if(opt->getValue("mux-combi")!=NULL){
-        std::string muxconfig = opt->getValue("mux-combi");
-        std::string currentaudio;
-        std::string bitrates;
-        do{
-            bitrates = muxconfig.substr(0,muxconfig.find('@'));
-            if(muxconfig.find('|') == std::string::npos){
-                currentaudio = muxconfig.substr(muxconfig.find('@')+1);
-                muxconfig = "";
-            }
-            else{
-				currentaudio = muxconfig.substr(muxconfig.find('@') + 1, muxconfig.find('|') - muxconfig.find('@')-1);
-                muxconfig = muxconfig.substr(muxconfig.find('|')+1);
-            }
-            do{
-                if(bitrates.find(',') == std::string::npos){
-                    av_mux_mapping[atoi(bitrates.c_str())] = atoi(currentaudio.c_str());
-                    bitrates = "";
-                }
-                else{
-                    av_mux_mapping[atoi(bitrates.substr(0,',').c_str())] = atoi(currentaudio.c_str());
-                    bitrates = bitrates.substr(bitrates.find(',')+1);
-                }
-            }while(bitrates.size()>0);
-        }while(muxconfig.size()>0);
-    }*/
+	//video encoding
+	std::map<int, std::string> transcoded_video_files;
+	TransVideo(opt, v_enc, transcoded_video_files);
 
-    /************************ AUDIO PROCESSING ******************************/
-    std::string audio_quality = opt->getValue("audio-quality");
-    char*c2 = (char*) malloc(audio_quality.length() * sizeof(char));
-    strcpy(c2, audio_quality.c_str());
-    char* act_audio = strtok(c2, "|");
-    std::string act_quality = "";
+	//audio encoding
+	std::map<int, std::string> transcoded_audio_files;
+	TransAudio(opt, a_enc, transcoded_audio_files);
 
-    while (act_audio != NULL)
-    {
+	//multiplexing
+	std::map<int, int> av_mux_mapping;
+	std::vector<std::string> muxed_files;
+	AVMux(opt, av_mux_mapping, muxer, transcoded_video_files, transcoded_audio_files,muxed_files);
+	
+	//mpdgenerating
+	std::string mpd_path;
+	MpdGen(mpdgen, muxed_files, mpd_path);
 
-        act_quality = act_audio;
-        ae->setChannels(atoi(act_quality.substr(0, act_quality.find(',')).c_str()));
+	std::cout << "\nFINISHED! Success! Mpd Path: "<< mpd_path<<std::endl;
 
-        act_quality = act_quality.substr(act_quality.find(',') + 1);
-		ae->setSamplingRate(atoi(act_quality.substr(0, act_quality.find(',')).c_str()));
-
-		ae->setBitrate(atoi(act_quality.substr(act_quality.find(',') + 1).c_str()));
-
-		aac_file = ae->encode();
-		if ("-1" == aac_file)
-		{
-			std::cout << "ERROR£¡Audio Encoding \n";
-			return -1;
-		}
-		mp4file_aac = m->multiplex(aac_file);
-		if ("-1" == mp4file_aac)
-		{
-			std::cout << "ERROR£¡Audio Multiplexing \n";
-			return -1;
-		}
-
-		audio_files[ae->getBitrate()] = mp4file_aac;
-
-		/************ DO NOT MUX AUDIO AND VIDEO **********************/
-        /*if (opt->getValue("mux-combi") == NULL)
-        {*/
-            /************ AUDIO FOLDER CREATION **********************/
-		/*
-            foldername = opt->getValue("folder-prefix");
-            foldername.append("_");
-            foldername.append(DASHHelper::itos(a->getChannels()));
-            foldername.append("ch_");
-			foldername.append(DASHHelper::itos(a->getSamplingRate()));
-			foldername.append("sr_audio_");
-            foldername.append(DASHHelper::itos(a->getBitrate()));
-            foldername.append("kbit");
-
-            folder = "mkdir ";
-            folder.append(opt->getValue("dest-directory"));
-            folder.append(foldername);
-            system(folder.c_str());
-
-            folder = "mv ";
-            //folder.append(opt->getValue("dest-directory"));
-            folder.append(act_audio_encoding);
-            folder.append(" ");
-            folder.append(opt->getValue("dest-directory"));
-            folder.append(foldername);
-            system(folder.c_str());*/
-
-            /************ AUDIO MULTIPLEXING & SEGMENTATION **************/
-		/*
-            act_audio_seg = opt->getValue("dest-directory");
-            act_audio_seg.append(foldername);
-            act_audio_seg.append("\\");
-            act_audio_seg.append(opt->getValue("segment-name"));
-
-            m->setSegName(act_audio_seg);
-
-            act_audio_seg = opt->getValue("dest-directory");
-            act_audio_seg.append(foldername);
-            act_audio_seg.append("\\");
-            act_audio_seg.append(act_audio_encoding.substr(act_audio_encoding.find_last_of('\\')+1));
-
-            std::string audio_mpd = m->multiplex(act_audio_seg);
-
-			mpds.push_back(audio_mpd);*/
-
-        act_audio = strtok(NULL, "|");
-    }
-
-    /************************ VIDEO PROCESSING ******************************/
-
-    string bitrates = opt->getValue('b');
-    char*c1 = (char*) malloc(bitrates.length() * sizeof(char));
-    strcpy(c1, bitrates.c_str());
-    char* pch = strtok(c1, "|");
-	std::string act = "";
-
-    while (pch != NULL)
-    {
-        /************VIDEO ENCODING *****************************/
-        act = pch;
-
-        if (act.find('@') != std::string::npos)
-        {
-            std::cout << act << "\n";
-            ve->setoWidth(atoi(act.substr(act.find('@') + 1, act.find('x') - act.find('@') - 1).c_str()));
-            ve->setoHeight(atoi(act.substr(act.find('x') + 1).c_str()));
-            ve->setBitrate(atoi(act.substr(0, act.find('@')).c_str()));
-        }
-        else
-        {
-            ve->setBitrate(atoi(pch));
-        }
-
-        h264file = ve->encode();
-		if ("-1" == h264file)
-		{
-			std::cout << "ERROR£¡Video Encoding \n";
-			return -1;
-		}
-
-		mp4file_h264 = m->multiplex(h264file);
-		if ("-1" == mp4file_h264)
-		{
-			std::cout << "ERROR£¡Video Multiplexing \n";
-			return -1;
-		}
-
-		video_files[ve->getBitrate()] = mp4file_h264;
-
-        /************VIDEO FOLDER CREATION **********************/
-        /*foldername = opt->getValue("folder-prefix");
-        foldername.append("_");
-		foldername.append(DASHHelper::itos(e->getWidth()));
-		foldername.append("x");
-		foldername.append(DASHHelper::itos(e->getHeight()));
-		foldername.append("_");
-        foldername.append(DASHHelper::itos(e->getBitrate()));
-        foldername.append("kbit");
-
-        folder = "mkdir ";
-        folder.append(opt->getValue("dest-directory"));
-        folder.append(foldername);
-        system(folder.c_str());
-
-        folder = "mv ";
-        folder.append(opt->getValue("dest-directory"));
-        folder.append(h264file);
-        folder.append(" ");
-        folder.append(opt->getValue("dest-directory"));
-        folder.append(foldername);
-        system(folder.c_str());
-
-        if(opt->getValue("mux-combi")!=NULL){
-
-            folder = "cp ";
-            folder.append(opt->getValue("dest-directory"));
-            folder.append(audio_files[av_mux_mapping[e->getBitrate()]]);
-            folder.append(" ");
-            folder.append(opt->getValue("dest-directory"));
-            folder.append(foldername);
-            folder.append("\\");
-            folder.append(audio_files[av_mux_mapping[e->getBitrate()]]);
-            std::cout << "copy audio: " << folder;
-            system(folder.c_str());
-        }*/
-
-        /************ STORE STATISTICS *********************/
-/* MySQL Support Disabled
-        if(opt->getFlag("store-psnr")){
-
-           mysql_init(&mysql);
-
-           mysql_options(&mysql, MYSQL_READ_DEFAULT_FILE,  "/opt/lampp/etc/my.cnf");
-           //mysql_options(&mysql, MYSQL_OPT_SSL_VERIFY_SERVER_CERT, "/etc/ssl/certs/ComodoIntermediate.pem");
-           //mysql_ssl_set(&mysql, NULL, NULL, "/etc/ssl/certs/ComodoIntermediate.pem",NULL, NULL);
-
-           connection = mysql_real_connect(&mysql,opt->getValue("sql-host"),opt->getValue("sql-user"),opt->getValue("sql-pw"),opt->getValue("sql-database"),0,0,0);
-
-           if (connection == NULL)
-           {
-               std::cout << "MySQL Error: " << mysql_error(&mysql) << "\n";
-               return ;
-           }
-           infile.open("out.txt", ifstream::in);
-
-           act_rep = "";
-           std::string query;
-           int posStart;
-           int posEnd;
-
-           if (infile.is_open())
-           {
-               while (infile.good())
-               {
-                   getline(infile, act_line);
-                   if(act_line.find("x264 [debug]: frame=") != std::string::npos){
-                       //std::cout << act_line << "\n";
-                       query = "INSERT INTO frames (framenr, type, ypsnr,upsnr, vpsnr, representation) Values (";
-
-                       posStart = act_line.find("frame=")+6;
-                       query.append(act_line.substr(posStart,  act_line.find("QP")-posStart));
-                       query.append(", \"");
-
-                       query.append(act_line.substr(act_line.find("Slice:")+6, 1));
-                       query.append("\", ");
-
-                       posStart = act_line.find("Y:")+2;
-                       query.append(act_line.substr(posStart,  act_line.find("U:")-posStart));
-                       query.append(", ");
-
-                       posStart = act_line.find("U:")+2;
-                       query.append(act_line.substr(posStart,  act_line.find("V:")-posStart));
-                       query.append(", ");
-
-                       query.append(act_line.substr(act_line.find("V:")+2));
-                       query.append(", \"");
-
-                       query.append(foldername);
-                       query.append("\")");
-                       //std::cout << "\n" << query;
-                       mysql_query(connection, query.c_str());
-                   }
-               }
-               std::cout << "PSNR data stored in MySQL database!";
-               infile.close();
-           }
-           else
-               cout << "Error: Unable to open Log file!";
-        }
-
-*/
-        /************VIDEO MULTIPLEXING & SEGMENTATION **************/
-
-        /*h264new = opt->getValue("dest-directory");
-        h264new.append(foldername);
-        h264new.append("\\");
-        h264new.append(opt->getValue("segment-name"));
-
-        m->setSegName(h264new);
-
-        h264new = opt->getValue("dest-directory");
-        h264new.append(foldername);
-        h264new.append("\\");
-        h264new.append(h264file);
-
-        if(opt->getValue("mux-combi")!=NULL){
-
-            std::string af =opt->getValue("dest-directory");
-            af.append(foldername);
-            af.append("\\");
-            af.append(audio_files[av_mux_mapping[e->getBitrate()]]);
-
-            m->setAudioFile(af);
-        }
-
-        std::string videompd = m->multiplex(h264new);
-		mpds.push_back(videompd);*/
-
-        ve->setoWidth(0);
-        ve->setoHeight(0);
-
-        pch = strtok(NULL, "|");
-    }
-
-	/*video processing done here*/
-
-    /* MPD Gneration */
-    std::cout << "\nWriting final MPD...\n";
-	std::string mpdname=mpdgen->Segment(audio_files, video_files);
-	if ("-1" == mpdname)
-	{
-		std::cout << "ERROR£¡MPD Generate \n";
-		return -1;
-	}
-
-    std::cout << "\nFINISHED! Success!\n";
-    delete opt;
+	delete opt;
+	delete encoder_factory;
+	delete v_enc;
+	delete a_enc;
+	delete mpdgen;
+	delete muxer;
 	return 0;
 }
 
+int parse(AnyOption *opt, int argc, char* argv[])
+{
+	/* COMMAND LINE PREFERENCES  */
+	opt->setVerbose(); /* print warnings about unknown options */
+	opt->autoUsagePrint(true); /* print usage for bad options */
+
+	/* SET THE USAGE/HELP   */
+	setHelp(opt);
+
+	/* SET THE OPTION STRINGS/CHARACTERS */
+	setCommandOptions(opt);
+
+	if (argc > 1){
+		/* PROCESS THE COMMANDLINE */
+		opt->processCommandArgs(argc, argv);
+		bool show_help = false;
+		string config_file;
+		show_help = opt->getValue("help");
+		if (show_help){
+			opt->printUsage();
+			return -1;
+		}
+		else{
+			config_file = opt->getValue("input_config");
+			setFileOptions(opt);
+			/* PROCESS THE RESOURCE FILE */
+			if (!opt->processFile(config_file.c_str())){
+				std::cout << "ERROR! Cant process input config file\n";
+				return -1;
+			}
+		}
+	}
+	else{
+		opt->printUsage();
+		return -1;
+	}
+}
+
+
 void setHelp(AnyOption* opt)
 {
-    opt->addUsage("");
-    opt->addUsage("Usage: ");
-    opt->addUsage("");
-    opt->addUsage(" -h  --help              Print help ");
-    opt->addUsage(" -d  --dest-directory    Destination directory"); 
-	opt->addUsage(" -V  --video-encoder     Video encoder");
-    opt->addUsage(" -A  --audio-encoder     Audio encoder");
-    opt->addUsage(" -R  --multiplexer       Multiplexing tool");
-	//Video options
-	opt->addUsage(" -i  --input             Input file");
-    //opt->addUsage(" -W  --input-width       width of input video");
-	//opt->addUsage(" -H  --input-height      height of input video");
-	opt->addUsage(" -b  --bitrate           Video bitrates (exmaple: see config file)");
-	opt->addUsage(" -g  --fps               frame per second");
-	opt->addUsage(" -p  --profile           h.264 profile");
-	opt->addUsage(" -P  --preset            x264 preset");
-	opt->addUsage(" -k  --passes            Encoding passes");
-	opt->addUsage(" -C  --video-codec       Video Codec");
-	//Audio options
-	opt->addUsage(" -a  --audio-quality     Audio qualities (see config file)");
-    opt->addUsage(" -I  --audio-input       Audio source");
-	opt->addUsage(" -c  --audio-codec       Audio codec");
-	//MP4box options
-	//opt->addUsage(" -M  --mux-combi         A/V muxing combinations");
-	//MPD options
-	opt->addUsage(" -r  --rap-aligned       Muliplexing at GOP boundaries");
-	opt->addUsage(" -D  --use-template-url  Use Segment Template");
-	opt->addUsage(" -m  --mpd-name          MPD name");
-	opt->addUsage(" -u  --base-url          Base url");	
-	opt->addUsage(" -f  --fragment-size     Fragment size in milliseconds");
-	opt->addUsage(" -S  --segment-size      DASH segment size in milliseconds");
-    opt->addUsage(" -B  --minBufferTime     Minimum Buffer in MPD in milliseconds");
-	//SQL options
-	/*opt->addUsage(" -o  --store-psnr        Store PSNR statistics to database");
-	opt->addUsage(" -y  --sql-host          MySQL host");
-	opt->addUsage(" -z  --sql-user          MySQL user");
-	opt->addUsage(" -Z  --sql-pw            MySQL password");
-	opt->addUsage(" -Y  --sql-database      MySQL database");*/
-    opt->addUsage("");
+	opt->addUsage("Usage: ");
+	opt->addUsage("");
+	opt->addUsage(" -h  Print help ");
+	opt->addUsage(" -i  Input config file");
+	opt->addUsage("");
 }
-void setOptions(AnyOption* opt)
+
+void setCommandOptions(AnyOption* opt){
+	opt->setCommandFlag("help", 'h');
+	opt->setCommandOption("input_config", 'i');
+}
+
+void setFileOptions(AnyOption* opt)
 {
-    opt->setFlag("help", 'h');
-	opt->setOption("dest-directory", 'd');
-	opt->setOption("video-encoder", 'V');
-	opt->setOption("audio-encoder", 'A');
-	opt->setOption("multiplexer", 'R');
+	opt->setFileOption("dest-directory");
+	opt->setFileOption("video-encoder");
+	opt->setFileOption("audio-encoder");
+	opt->setFileOption("multiplexer");
 	//Video options
-    opt->setOption("input", 'i');
-	//opt->setOption("input-width", 'W');
-	//opt->setOption("input-height", 'H');
-    opt->setOption("bitrate", 'b');
-    opt->setOption("fps", 'g');
-    opt->setOption("profile", 'p');
-    opt->setOption("preset", 'P');
-	opt->setOption("passes", 'k');
-	opt->setOption("video-codec", 'C');
+	opt->setFileOption("input");
+	opt->setFileOption("input-width");
+	opt->setFileOption("input-height");
+	opt->setFileOption("bitrate");
+	opt->setFileOption("fps");
+	opt->setFileOption("profile");
+	opt->setFileOption("preset");
+	opt->setFileOption("passes");
+	opt->setFileOption("video-codec");
 	//Audio options
-	opt->setOption("audio-quality", 'a');
-	opt->setOption("audio-input", 'I');
-	opt->setOption("audio-codec", 'c');
+	opt->setFileOption("audio-rep");
+	opt->setFileOption("audio-input");
+	opt->setFileOption("audio-codec");
 	//MP4box options
-	//opt->setOption("mux-combi", 'M');
-    //MPD options
-	opt->setOption("rap-aligned", 'r');
-	opt->setOption("use-template-url", 'D');
-	opt->setOption("mpd-name", 'm');
-	opt->setOption("base-url", 'u');
-	opt->setOption("fragment-size", 'f');
-    opt->setOption("segment-size", 'S');
-	opt->setOption("minBufferTime", 'B');
-	//SQL options
-    /*opt->setFlag("store-psnr", 'o');
-    opt->setOption("sql-host", 'y');
-    opt->setOption("sql-user", 'z');
-    opt->setOption("sql-pw", 'Z');
-    opt->setOption("sql-database", 'Y');*/
+	//opt->setFileOption("mux-combi");
+	//MPD options
+	opt->setFileOption("rap-aligned");
+	opt->setFileOption("use-template-url");
+	opt->setFileOption("mpd-name");
+	opt->setFileOption("base-url");
+	opt->setFileOption("fragment-size");
+	opt->setFileOption("segment-size");
+	opt->setFileOption("minBufferTime");
 }
 
 IEncoder::EncoderType getEncoder(std::string e){
-    if(e.compare("VP8")==0)
-        return IEncoder::VP8;
-    else if(e.compare("AAC")==0)
-        return IEncoder::AAC;
-    else if(e.compare("H264")==0)
-        return IEncoder::H264;
+	if (e.compare("VP8") == 0)
+		return IEncoder::VP8;
+	else if (e.compare("AAC") == 0)
+		return IEncoder::AAC;
+	else if (e.compare("H264") == 0)
+		return IEncoder::H264;
 	else
 		return IEncoder::ERROR;
 }
 
 
+int TransAudio(AnyOption* opt, AbstractAudioEncoder* a_enc, std::map<int, std::string> transcoded_audio_files){
+	/*
+	 *audio-rep : 2,44100,48|2,44100,128	#[channels, samplerate, bitrate], or simply set audio-quality : 2,44100,48
+	 */
+	std::string audio_reps = " ";
+	audio_reps = opt->getValue("audio-rep");
+	if (audio_reps == " "){
+		std::cout << "ERROR£¡Audio Rep Setting Not Found\n";
+		return -1;
+	}
+	char* c2 = (char*)malloc(audio_reps.length() * sizeof(char));
+	strcpy(c2, audio_reps.c_str());
+	char* p;
+	char* a_rep = strtok_s(c2, "|", &p);
+	std::string a_rep_str = " ";
 
+	while (a_rep != NULL)
+	{
+		a_rep_str = a_rep;
+		a_enc->setChannels(atoi(a_rep_str.substr(0, a_rep_str.find(',')).c_str()));
+
+		a_rep_str = a_rep_str.substr(a_rep_str.find(',') + 1);
+		a_enc->setSamplingRate(atoi(a_rep_str.substr(0, a_rep_str.find(',')).c_str()));
+
+		a_enc->setBitrate(atoi(a_rep_str.substr(a_rep_str.find(',') + 1).c_str()));
+
+		std::string encoded_audio_file = a_enc->encode();
+		if ("-1" == encoded_audio_file)
+		{
+			std::cout << "ERROR£¡Audio Transcoding Failed\n";
+			return -1;
+		}
+
+		transcoded_audio_files[a_enc->getBitrate()] = encoded_audio_file;
+		a_rep = strtok_s(NULL, "|", &p);
+	}
+
+	return 0;
+}
+
+int TransVideo(AnyOption* opt, AbstractVideoEncoder* v_enc, std::map<int, std::string> transcoded_video_files){
+	/*
+	video-rep : 250@480x272|500@640x360			#or simply set video-rep : 200|400|600|1000
+	*/
+	std::string video_reps  = opt->getValue("video-rep");
+	if (video_reps.size() == 0){
+		std::cout << "ERROR£¡Video Rep Setting Not Found\n";
+		return -1;
+	}
+	char* c1 = (char*)malloc(video_reps.length() * sizeof(char));
+	strcpy(c1, video_reps.c_str());
+	char* p;
+	char* v_rep = strtok_s(c1, "|", &p);
+	std::string v_rep_str = "";
+
+	while (v_rep != NULL)
+	{
+		/************VIDEO ENCODING *****************************/
+		v_rep_str = v_rep;
+
+		if (v_rep_str.find('@') != std::string::npos)
+		{
+			v_enc->setoWidth(atoi(v_rep_str.substr(v_rep_str.find('@') + 1, v_rep_str.find('x') - v_rep_str.find('@') - 1).c_str()));
+			v_enc->setoHeight(atoi(v_rep_str.substr(v_rep_str.find('x') + 1).c_str()));
+			v_enc->setBitrate(atoi(v_rep_str.substr(0, v_rep_str.find('@')).c_str()));
+		}
+		else
+		{
+			v_enc->setBitrate(atoi(v_rep));
+		}
+
+		std::string encoded_video_file = v_enc->encode();
+		if ("-1" == encoded_video_file)
+		{
+			std::cout << "ERROR£¡Video Transcoding Failed\n";
+			return -1;
+		}
+
+		transcoded_video_files[v_enc->getBitrate()] = encoded_video_file;
+		v_rep = strtok_s(NULL, "|", &p);
+		v_enc->setoWidth(v_enc->getiWidth());
+		v_enc->setoHeight(v_enc->getiHeight());
+	}
+
+	return 0;
+}
+
+int AVMux(AnyOption *opt, std::map<int, int> av_mux_mapping, MP4BoxMultiplexer* muxer,
+	std::map<int, std::string> transcoded_video_files,
+	std::map<int, std::string> transcoded_audio_files,
+	std::vector<std::string> muxed_files){
+	/*
+		mux-combi : 250@48|500,1000@128
+	*/
+		std::string muxconfig = opt->getValue("mux-combi");
+		if (muxconfig.size() == 0){
+			std::cout << "ERROR£¡Muxing Setting Not Found\n";
+			return -1;
+		}
+		std::string abitrate;
+		std::string vbitrates;
+		int i = 0;
+		do{
+			vbitrates = muxconfig.substr(0, muxconfig.find('@'));
+			if (muxconfig.find('|') == std::string::npos){
+				abitrate = muxconfig.substr(muxconfig.find('@') + 1);
+				muxconfig = "";
+			}
+			else{
+				abitrate = muxconfig.substr(muxconfig.find('@') + 1, muxconfig.find('|') - muxconfig.find('@') - 1);
+				muxconfig = muxconfig.substr(muxconfig.find('|') + 1);
+			}
+			do{
+				if (vbitrates.find(',') == std::string::npos){
+					av_mux_mapping[atoi(vbitrates.c_str())] = atoi(abitrate.c_str());
+					std::string muxed_file=muxer->multiplex(transcoded_video_files[atoi(vbitrates.c_str())], transcoded_audio_files[atoi(abitrate.c_str())]);
+					if (muxed_file.size() == 0){
+						std::cout << "ERROR£¡Muxing Failed\n";
+						return -1;
+					}
+					else
+						muxed_files.push_back(muxed_file);
+					vbitrates = "";
+				}
+				else{
+					av_mux_mapping[atoi(vbitrates.substr(0, ',').c_str())] = atoi(abitrate.c_str());
+					std::string muxed_file=muxer->multiplex(transcoded_video_files[atoi(vbitrates.substr(0, ',').c_str())], transcoded_audio_files[atoi(abitrate.c_str())]);
+					if (muxed_file.size() == 0){
+						std::cout << "ERROR£¡Muxing Failed\n";
+						return -1;
+					}
+					else
+						muxed_files.push_back(muxed_file);
+					vbitrates = vbitrates.substr(vbitrates.find(',') + 1);
+				}
+			} while (vbitrates.size() > 0);
+		} while (muxconfig.size() > 0);
+	return 0;
+}
+
+int MpdGen(MPDGenerator* mpdgen, std::vector<std::string> muxed_files, std::string mpd_path){
+	/* MPD Gneration */
+	std::cout << "\nWriting final MPD...\n";
+	mpd_path = mpdgen->Segment(muxed_files);
+	if ("-1" == mpd_path)
+	{
+		std::cout << "ERROR£¡MPD Generate Failed\n";
+		return -1;
+	}
+	return 0;
+}

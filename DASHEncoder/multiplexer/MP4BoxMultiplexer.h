@@ -38,7 +38,7 @@ class MP4BoxMultiplexer : public AbstractMultiplexer
         MP4BoxMultiplexer();
          ~MP4BoxMultiplexer();
 
-        std::string     multiplex                  (std::string input);
+		 std::string     multiplex(std::string vinput, std::string ainput);
         std::string     multiplex                  ();
 };
 
