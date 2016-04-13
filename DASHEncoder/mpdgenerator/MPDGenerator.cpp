@@ -117,7 +117,7 @@ std::string     MPDGenerator::Segment(std::vector<std::string> muxed_files){
 	mp4box.append("-out \"");
 	std::string mpdname = this->outputDir;
 	mpdname.append(this->mpdName);
-	mp4box.append(mpdname);
+	mp4box.append(mpdname+".mpd");
 	mp4box.append("\" ");
 
 	mp4box.append("-tmp \"");
@@ -150,7 +150,7 @@ std::string     MPDGenerator::Segment(std::vector<std::string> muxed_files){
 	}
 
 	mp4box.append("-segment-name ");
-	mp4box.append("media_$RepresentationID$_$Bandwidth$/%s");
+	mp4box.append(this->mpdName+"_$RepresentationID$_$Bandwidth$/"+this->mpdName+"_seg_");
 	mp4box.append(" ");
 
 	std::vector<std::string>::const_iterator it = muxed_files.begin();
@@ -158,6 +158,7 @@ std::string     MPDGenerator::Segment(std::vector<std::string> muxed_files){
 	{
 		mp4box.append("\"");
 		mp4box.append(*it);
+		mp4box.append("\" ");
 		++it;
 	}
 

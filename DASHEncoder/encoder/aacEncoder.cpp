@@ -37,55 +37,47 @@ std::string     AACEncoder::encode(std::string input){
 std::string     AACEncoder::encode(){
 	std::cout << "AAC Audio FFmpeg Encoding @ " << this->bitrate << "kbps\n";
 
-    std::string out = "";
+    std::string ffmpeg = "ffmpeg -y ";
 
-    std::string aac = "ffmpeg -y ";
+	ffmpeg.append("-i \"");
+	ffmpeg.append(this->input);
+	ffmpeg.append("\" ");
 
-    aac.append("-i \"");
-    aac.append(this->input);
-    aac.append("\" ");
+	ffmpeg.append("-acodec ");
+	ffmpeg.append(this->acodec);
+	ffmpeg.append(" ");
 
-    aac.append("-acodec ");
-    aac.append(this->acodec);
-    aac.append(" ");
+	ffmpeg.append("-ac ");
+	ffmpeg.append(DASHHelper::itos(this->channels));
+	ffmpeg.append(" ");
 
-    aac.append("-ac ");
-    aac.append(DASHHelper::itos(this->channels));
-    aac.append(" ");
+	ffmpeg.append("-ar ");
+	ffmpeg.append(DASHHelper::itos(this->srate));
+	ffmpeg.append(" ");
 
-    aac.append("-ar ");
-    aac.append(DASHHelper::itos(this->srate));
-    aac.append(" ");
+	ffmpeg.append("-ab ");
+	ffmpeg.append(DASHHelper::itos(this->bitrate));
+	ffmpeg.append("k ");
 
-    aac.append("-ab ");
-    aac.append(DASHHelper::itos(this->bitrate));
-    aac.append("k ");
+	std::string transcoded_audio_file = "";
+	transcoded_audio_file.append(this->outputDir);
+	transcoded_audio_file.append(this->input.substr(this->input.find_last_of("/") + 1, this->input.find_last_of(".") - this->input.find_last_of("/") - 1));
+	transcoded_audio_file.append("_");
+	transcoded_audio_file.append(DASHHelper::itos(this->channels));
+	transcoded_audio_file.append("ch_");
+	transcoded_audio_file.append(DASHHelper::itos(this->getSamplingRate()));
+	transcoded_audio_file.append("sr_");
+	transcoded_audio_file.append(DASHHelper::itos(this->bitrate));
+	transcoded_audio_file.append("k.aac");
+	
+	ffmpeg.append("\"");
+	ffmpeg.append(transcoded_audio_file+'\"');
+	
+	ffmpeg.append(" >audio_transcoding_log.txt 2>&1 ");
+	std::cout << "ffmpeg: " << ffmpeg << "\n";
+	if (system(ffmpeg.c_str()) < 0)
+		return DASHHelper::itos(-1);	
 
-	aac.append("\"");
-	aac.append(this->outputDir);
-	aac.append(this->input.substr(this->input.find_last_of("/") + 1, this->input.find_last_of(".") - this->input.find_last_of("/") - 1));
-	aac.append("_");
-	aac.append(DASHHelper::itos(this->channels));
-	aac.append("ch_");
-	aac.append(DASHHelper::itos(this->getSamplingRate()));
-	aac.append("sr_");
-	aac.append(DASHHelper::itos(this->bitrate));
-	aac.append("kbit.aac\" ");
-
-    std::cout <<aac << "\n";
-	if (system(aac.c_str()) < 0)
-		return DASHHelper::itos(-1);
-
-	out.append(this->outputDir);
-	out.append(this->input.substr(this->input.find_last_of("/") + 1, this->input.find_last_of(".") - this->input.find_last_of("/") - 1));
-	out.append("_");
-	out.append(DASHHelper::itos(this->channels));
-	out.append("ch_");
-	out.append(DASHHelper::itos(this->getSamplingRate()));
-	out.append("sr_");
-	out.append(DASHHelper::itos(this->bitrate));
-	out.append("kbit.aac ");
-
-    return out;
+	return transcoded_audio_file;
 }
 

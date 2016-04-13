@@ -89,36 +89,27 @@ std::string     H264Encoder::encode(){
 		ffmpeg.append(" ");
     }
 
+	std::string transcoded_video_file = "";
+	transcoded_video_file.append(this->outputDir);
+	transcoded_video_file.append(this->input.substr(this->input.find_last_of("/") + 1, this->input.find_last_of(".") - this->input.find_last_of("/") - 1));
+	transcoded_video_file.append("_");
+	transcoded_video_file.append(DASHHelper::itos(this->owidth));
+	transcoded_video_file.append("x");
+	transcoded_video_file.append(DASHHelper::itos(this->oheight));
+	transcoded_video_file.append("_");
+	transcoded_video_file.append(DASHHelper::itos(this->bitrate));
+	transcoded_video_file.append("k.h264");
 
 	ffmpeg.append("\"");
-	ffmpeg.append(this->outputDir);
-	ffmpeg.append(this->input.substr(this->input.find_last_of("/") + 1, this->input.find_last_of(".") - this->input.find_last_of("/") - 1));
-	ffmpeg.append("_");
-	ffmpeg.append(DASHHelper::itos(this->owidth));
-	ffmpeg.append("x");
-	ffmpeg.append(DASHHelper::itos(this->oheight));
-	ffmpeg.append("_");
-	ffmpeg.append(DASHHelper::itos(this->bitrate));
-	ffmpeg.append("kbit.h264\" ");
+	ffmpeg.append(transcoded_video_file + '\"');
+	
     
-	ffmpeg.append(" >out.txt 2>&1 ");
+	ffmpeg.append(" >video_transcoding_log.txt 2>&1 ");
     std::cout << "ffmpeg: " <<ffmpeg << "\n";
 	if (system(ffmpeg.c_str()) < 0)
 		return DASHHelper::itos(-1);
-	
 
-    std::string out = "";
-	out.append(this->outputDir);
-    out.append(this->input.substr(this->input.find_last_of("/")+1,this->input.find_last_of(".")-this->input.find_last_of("/")-1));
-    out.append("_");
-	out.append(DASHHelper::itos(this->owidth));
-	out.append("x");
-	out.append(DASHHelper::itos(this->oheight));
-	out.append("_");
-    out.append(DASHHelper::itos(this->bitrate));
-    out.append("kbit.h264 ");
-
-    return out;
+	return transcoded_video_file;
 }
 
 

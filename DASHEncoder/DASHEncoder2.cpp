@@ -17,16 +17,17 @@ void setFileOptions(AnyOption*);
 void setCommandOptions(AnyOption*);
 IEncoder::EncoderType getEncoder(std::string);
 
-int TransAudio(AnyOption *opt, AbstractAudioEncoder* a_enc, std::map<int, std::string> transcoded_audio_files);
-int TransVideo(AnyOption *opt, AbstractVideoEncoder* v_enc, std::map<int, std::string> transcoded_video_files);
-int AVMux(AnyOption *opt, std::map<int, int> av_mux_mapping, MP4BoxMultiplexer* muxer,
+int TransAudio(AnyOption *opt, AbstractAudioEncoder* a_enc, std::map<int, std::string> &transcoded_audio_files);
+int TransVideo(AnyOption *opt, AbstractVideoEncoder* v_enc, std::map<int, std::string> &transcoded_video_files);
+int AVMux(AnyOption *opt, std::map<int, int> &av_mux_mapping, MP4BoxMultiplexer* muxer,
 	std::map<int, std::string> transcoded_video_files,
 	std::map<int, std::string> transcoded_audio_files,
-	std::vector<std::string> muxed_files);
-int MpdGen(MPDGenerator* mpdgen, std::vector<std::string> muxed_files, std::string mpd_path);
+	std::vector<std::string> &muxed_files);
+int MpdGen(MPDGenerator* mpdgen, std::vector<std::string> muxed_files, std::string &mpd_path);
 
 int main(int argc, char* argv[])
 {
+	
 	std::cout << "======================DASH ENCODER======================\n" << std::endl;
 	std::cout << "Usage: " << std::endl;
 	std::cout << " -h  Print help " << std::endl;
@@ -72,30 +73,45 @@ int main(int argc, char* argv[])
 	MP4BoxMultiplexer* muxer = new MP4BoxMultiplexer();
 	muxer->setOutputDir(opt->getValue("dest-directory"));
 	std::string outdir = muxer->getOutputDir();
-	outdir.append(opt->getValue("mpd-name"));
+
 	std::string mk = "mkdir \"";
-	mk.append(outdir.substr(0, outdir.find_last_of("/")));
+	mk.append(outdir);
 	mk.append("\"");
 	system(mk.c_str());
 
 	//video encoding
 	std::map<int, std::string> transcoded_video_files;
-	TransVideo(opt, v_enc, transcoded_video_files);
-
+	ret = TransVideo(opt, v_enc, transcoded_video_files);
+	if (ret < 0){
+		std::cout << "ERROR£¡Transcoding Video Failed, Check video_transcoding_log\n";
+		return -1;
+	}
 	//audio encoding
 	std::map<int, std::string> transcoded_audio_files;
-	TransAudio(opt, a_enc, transcoded_audio_files);
+	ret = TransAudio(opt, a_enc, transcoded_audio_files);
+	if (ret < 0){
+		std::cout << "ERROR£¡Transcoding Audio Failed, Check audio_transcoding_log\n";
+		return -1;
+	}
 
 	//multiplexing
 	std::map<int, int> av_mux_mapping;
 	std::vector<std::string> muxed_files;
-	AVMux(opt, av_mux_mapping, muxer, transcoded_video_files, transcoded_audio_files,muxed_files);
-	
+	ret = AVMux(opt, av_mux_mapping, muxer, transcoded_video_files, transcoded_audio_files, muxed_files);
+	if (ret < 0){
+		std::cout << "ERROR£¡Multiplexing Video and Audio Failed\n";
+		return -1;
+	}
+
 	//mpdgenerating
 	std::string mpd_path;
-	MpdGen(mpdgen, muxed_files, mpd_path);
+	ret = MpdGen(mpdgen, muxed_files, mpd_path);
+	if (ret < 0){
+		std::cout << "ERROR£¡Mpd Generating Failed\n";
+		return -1;
+	}
 
-	std::cout << "\nFINISHED! Success! Mpd Path: "<< mpd_path<<std::endl;
+	std::cout << "\nFINISHED! Success! Mpd Path: " << mpd_path << ".mpd" << std::endl;
 
 	delete opt;
 	delete encoder_factory;
@@ -103,6 +119,7 @@ int main(int argc, char* argv[])
 	delete a_enc;
 	delete mpdgen;
 	delete muxer;
+	
 	return 0;
 }
 
@@ -169,7 +186,7 @@ void setFileOptions(AnyOption* opt)
 	opt->setFileOption("input");
 	opt->setFileOption("input-width");
 	opt->setFileOption("input-height");
-	opt->setFileOption("bitrate");
+	opt->setFileOption("video-rep");
 	opt->setFileOption("fps");
 	opt->setFileOption("profile");
 	opt->setFileOption("preset");
@@ -180,7 +197,7 @@ void setFileOptions(AnyOption* opt)
 	opt->setFileOption("audio-input");
 	opt->setFileOption("audio-codec");
 	//MP4box options
-	//opt->setFileOption("mux-combi");
+	opt->setFileOption("mux-combi");
 	//MPD options
 	opt->setFileOption("rap-aligned");
 	opt->setFileOption("use-template-url");
@@ -203,7 +220,7 @@ IEncoder::EncoderType getEncoder(std::string e){
 }
 
 
-int TransAudio(AnyOption* opt, AbstractAudioEncoder* a_enc, std::map<int, std::string> transcoded_audio_files){
+int TransAudio(AnyOption* opt, AbstractAudioEncoder* a_enc, std::map<int, std::string> &transcoded_audio_files){
 	/*
 	 *audio-rep : 2,44100,48|2,44100,128	#[channels, samplerate, bitrate], or simply set audio-quality : 2,44100,48
 	 */
@@ -239,11 +256,11 @@ int TransAudio(AnyOption* opt, AbstractAudioEncoder* a_enc, std::map<int, std::s
 		transcoded_audio_files[a_enc->getBitrate()] = encoded_audio_file;
 		a_rep = strtok_s(NULL, "|", &p);
 	}
-
+	
 	return 0;
 }
 
-int TransVideo(AnyOption* opt, AbstractVideoEncoder* v_enc, std::map<int, std::string> transcoded_video_files){
+int TransVideo(AnyOption* opt, AbstractVideoEncoder* v_enc, std::map<int, std::string> &transcoded_video_files){
 	/*
 	video-rep : 250@480x272|500@640x360			#or simply set video-rep : 200|400|600|1000
 	*/
@@ -286,14 +303,14 @@ int TransVideo(AnyOption* opt, AbstractVideoEncoder* v_enc, std::map<int, std::s
 		v_enc->setoWidth(v_enc->getiWidth());
 		v_enc->setoHeight(v_enc->getiHeight());
 	}
-
+			
 	return 0;
 }
 
-int AVMux(AnyOption *opt, std::map<int, int> av_mux_mapping, MP4BoxMultiplexer* muxer,
+int AVMux(AnyOption *opt, std::map<int, int> &av_mux_mapping, MP4BoxMultiplexer* muxer,
 	std::map<int, std::string> transcoded_video_files,
 	std::map<int, std::string> transcoded_audio_files,
-	std::vector<std::string> muxed_files){
+	std::vector<std::string> &muxed_files){
 	/*
 		mux-combi : 250@48|500,1000@128
 	*/
@@ -343,7 +360,7 @@ int AVMux(AnyOption *opt, std::map<int, int> av_mux_mapping, MP4BoxMultiplexer* 
 	return 0;
 }
 
-int MpdGen(MPDGenerator* mpdgen, std::vector<std::string> muxed_files, std::string mpd_path){
+int MpdGen(MPDGenerator* mpdgen, std::vector<std::string> muxed_files, std::string &mpd_path){
 	/* MPD Gneration */
 	std::cout << "\nWriting final MPD...\n";
 	mpd_path = mpdgen->Segment(muxed_files);

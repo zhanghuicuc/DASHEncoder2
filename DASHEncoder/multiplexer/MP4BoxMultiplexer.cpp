@@ -48,21 +48,41 @@ std::string     MP4BoxMultiplexer::multiplex(std::string vinput, std::string ain
 
 std::string     MP4BoxMultiplexer::multiplex                  (){
 
-    std::cout << "MP4Box multiplexing : " << this->vinput << "and " << this->ainput<< " \n";
+    std::cout << "MP4Box multiplexing : " << this->vinput << " and " << this->ainput<< " \n";
 
     std::string mp4box = "MP4Box ";
     mp4box.append("-add \"");
     mp4box.append(this->vinput);
-    mp4box.append("\" \"");
+    mp4box.append("\" ");
 	mp4box.append("-add \"");
 	mp4box.append(this->ainput);
-	mp4box.append("\" \"");
-	mp4box.append(this->vinput.substr(0, this->vinput.find_last_of("_")));
-	std::string vbitrate = this->vinput.substr(this->vinput.find_last_of("_"), this->vinput.find_last_of("_") - this->vinput.find_last_of(".") - 1);
-	std::string abitrate = this->ainput.substr(this->ainput.find_last_of("_"), this->ainput.find_last_of("_") - this->ainput.find_last_of(".") - 1);
-	mp4box.append("_" + vbitrate + "_" + abitrate);
-	mp4box.append(".mp4\"");
+	mp4box.append("\" ");
 
+	//the video input name is sth like test_320x180_400k.h264
+	std::string video_input_ori_name = this->vinput.substr(0, this->vinput.find_last_of('_'));
+	//video_input_ori_name is sth like test
+	video_input_ori_name = video_input_ori_name.substr(0, video_input_ori_name.find_last_of('_'));
+	//vbitrate is sth like 400k
+	std::string vbitrate = this->vinput.substr(this->vinput.find_last_of("_")+1, this->vinput.find_last_of(".") - this->vinput.find_last_of("_") - 1);
+	
+	//the audio input name is sth like test_2ch_44100sr_128k.aac
+	std::string audio_input_ori_name = this->ainput.substr(0, this->ainput.find_last_of('_'));
+	//audio_input_ori_name is sth like test
+	audio_input_ori_name = audio_input_ori_name.substr(0, audio_input_ori_name.find_last_of('_'));
+	audio_input_ori_name = audio_input_ori_name.substr(0, audio_input_ori_name.find_last_of('_'));
+	//abitrate is sth like 128k
+	std::string abitrate = this->ainput.substr(this->ainput.find_last_of("_")+1, this->ainput.find_last_of(".") - this->ainput.find_last_of("_") - 1);
+
+	//the muxed file is sth like test_v400k_a128k.mp4
+	std::string muxed_file = "";
+	muxed_file.append(video_input_ori_name + "_v" + vbitrate + '_');
+	if (video_input_ori_name != audio_input_ori_name)
+		muxed_file.append(audio_input_ori_name + '_');
+	muxed_file.append("a" + abitrate);
+	muxed_file.append(".mp4");
+
+	mp4box.append('\"'+muxed_file+'\"');
+	
     std::cout << "mp4box: " <<mp4box << "\n";
     system(mp4box.c_str());
 
@@ -70,18 +90,13 @@ std::string     MP4BoxMultiplexer::multiplex                  (){
 
    mp4box = "MP4Box ";
    mp4box.append("-no-sys ");
-   mp4box.append(" \"");
-   mp4box.append(this->vinput.substr(0, this->vinput.find_last_of("_")));
-   mp4box.append("_" + vbitrate + "_" + abitrate);
-   mp4box.append(".mp4\"");
+   mp4box.append('\"' + muxed_file + '\"');
+   
 
    std::cout << "mp4box: " <<mp4box << "\n";
    if (system(mp4box.c_str()) < 0)
 	   return DASHHelper::itos(-1);
 
-   std::string out = this->vinput.substr(0, this->vinput.find_last_of("."));
-   out.append("_" + vbitrate + "_" + abitrate);
-   out.append(".mp4");
-   return out;
+   return muxed_file;
 }
 
