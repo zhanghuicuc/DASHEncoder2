@@ -1,7 +1,8 @@
 # DASHEncoder2
-注意：近期将更新版本，改为使用python和Bento4工具集实现，更稳定。Will be updated to use python and Bento4 library soon.
+NOTE: See the new version in branch:dev-v2
 
-Tool to generated DASH content using config file or command line, modified from itec's DASHEncoder which is not maintained by them any more. 一个可以生成DASH媒体内容和MPD的工具
+Tool to generated DASH content using config file or command line, modified from itec's DASHEncoder which is not maintained by them any more. 
+一个可以生成DASH媒体内容和MPD的工具
 
 Dependencies:
 MP4Box and FFmpeg 
