@@ -1,5 +1,1 @@
-D:\git\DASHEncoder2\DASHEncoder\Beto4Utils>mp4dashencode.bat -v -d -f -o dashencode -b 100,300 -a 64,128 -r 512x288,640x360 -s 60 cuc_ieschool.mp4
-
-D:\git\DASHEncoder2\DASHEncoder\Beto4Utils>mp4dash -o dashtest --mpd-name=GoogleCast.mpd --use-segment-timeline -f .\dashencode\video_00100.mp4 .\dashencode\video_00300.mp4
-
-D:\git\DASHEncoder2\DASHEncoder\Beto4Utils>dashencode.bat -v -d -f --encfiles-output-dir=dashencode -b 100,300 -a 64,128 -r 512x288,640x360 -s 60 -o dashtest --mpd-name=GoogleCast.mpd --use-segment-timeline cuc_ieschool.mp4
+dashencode.bat -v -d -f --encfiles-output-dir=dashencode -b 100,300 -a 64,128 -r 512x288,640x360 -s 60 -o dashtest --mpd-name=cuc_ieschool.mpd --use-segment-timeline cuc_ieschool.mp4
