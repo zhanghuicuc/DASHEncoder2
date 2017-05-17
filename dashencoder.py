@@ -117,8 +117,8 @@ def main():
         parser.print_help()
         sys.exit(1)
     
-    dash_encode_cmd = 'python .\\utils\\mp4-dash-encode.py'
-    dash_cmd = 'python .\\utils\\mp4-dash.py'
+    dash_encode_cmd = 'mp4dashencode.bat'
+    dash_cmd = 'mp4dash.bat'
     
     #work with common options
     if options.verbose:
@@ -157,6 +157,7 @@ def main():
         
     if options.segment_size:
         dash_encode_cmd += ' -s ' + str(options.segment_size)
+        dash_cmd += ' -s ' + str(options.segment_size)
         
     if options.text_overlay:
         dash_encode_cmd += ' -t'
@@ -164,8 +165,8 @@ def main():
     if options.text_overlay_font:
         dash_encode_cmd += ' --text-overlay-font=' + str(options.text_overlay_font)
         
-    if options.encoder_params:
-        dash_encode_cmd += ' -e ' + str(options.encoder_params)
+    #if options.encoder_params:
+    #    dash_encode_cmd += ' -e ' + str(options.encoder_params)
         
     dash_encode_cmd += ' ' + args[0]
     

@@ -4,6 +4,7 @@ from subprocess import check_output, CalledProcessError
 import os
 import json
 import math
+import platform
 
 # setup main options
 VERSION = "1.0.0"
@@ -53,8 +54,8 @@ def run_command(options, cmd):
         message = "binary tool failed with error %d" % e.returncode
         if options.verbose:
             message += " - " + str(cmd)
-        raise Exception(message)
-
+        raise Exception(message)      
+        
 class MediaSource:
     def __init__(self, options, filename):
         self.width = 0
@@ -91,6 +92,23 @@ class MediaSource:
         return 'Video: resolution='+str(self.width)+'x'+str(self.height)
 
 def main():
+    # determine the platform binary name
+    host_platform = ''
+    if platform.system() == 'Linux':
+        if platform.processor() == 'x86_64':
+            host_platform = 'linux-x86_64'
+        else:
+            host_platform = 'linux-x86'
+    elif platform.system() == 'Darwin':
+        host_platform = 'macosx'
+    elif platform.system() == 'Windows':
+        host_platform = 'win32'
+    default_exec_dir = path.join(SCRIPT_PATH, 'bin', host_platform)
+    if not path.exists(default_exec_dir):
+        default_exec_dir = path.join(SCRIPT_PATH, 'bin')
+    if not path.exists(default_exec_dir):
+        default_exec_dir = path.join(SCRIPT_PATH, '..', 'bin')
+
     # parse options
     global Options
     parser = OptionParser(usage="%prog [options] <media-file>",
@@ -216,13 +234,13 @@ def main():
         elif options.video_codec == 'libx265':
             video_opts += ' -x265-params "no-open-gop=1:keyint=%d:no-scenecut=1:profile=main"' % (options.segment_size)
         if options.encoder_params:
-            video_opts += ' ' + options.encoder_params
+            video_opts += ' -vf scale=w='+str(Resolutions[i][0])+':h='+str(Resolutions[i][1])+':force_original_aspect_ratio=decrease,pad=w='+str(Resolutions[i][0])+':h='+str(Resolutions[i][1])+':x=(ow-iw)/2:y=(oh-ih)/2[aa];' + options.encoder_params
         cmd = base_cmd+' '+video_opts+' -s '+str(Resolutions[i][0])+'x'+str(Resolutions[i][1])+' -f mp4 '+temp_filename
         if options.verbose:
             print 'ENCODING bitrate: %d, resolution: %dx%d' % (int(Bitrates[i]), Resolutions[i][0], Resolutions[i][1])
         run_command(options, cmd)
 
-        cmd = '.\\bin\\mp4fragment "%s" "%s"' % (temp_filename, output_filename)
+        cmd = default_exec_dir+ '\\mp4fragment "%s" "%s"' % (temp_filename, output_filename)
         run_command(options, cmd)
 
         if not options.keep_files:

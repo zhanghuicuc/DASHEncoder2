@@ -22,6 +22,7 @@ import fractions
 import re
 import platform
 import sys
+import subprocess
 from mp4utils import *
 from subtitles import *
 
@@ -105,6 +106,20 @@ ProfileAliases = {
 }
 
 TempFiles = []
+TIs=[]
+SIs=[]
+#############################################
+# execute command, and return the output
+def run_command_output(options, cmd):
+    if options.debug:
+        print 'COMMAND: ', cmd
+    try:
+        out_bytes = subprocess.check_output(cmd, shell=True)
+        out_text = out_bytes.decode('utf-8')
+        return out_text
+    except subprocess.CalledProcessError as e:
+        out_bytes = e.output       # Output generated before error
+        code      = e.returncode   # Return code  
 
 #############################################
 def AddSegmentList(options, container, subdir, track, use_byte_range=False):
@@ -133,14 +148,29 @@ def AddSegmentList(options, container, subdir, track, use_byte_range=False):
         segment_length = reduce(operator.add, [atom.size for atom in segment], 0)
         if use_byte_range:
             byte_range = str(segment_offset) + '-' + str(segment_offset + segment_length - 1)
-            xml.SubElement(segment_list,
-                           'SegmentURL',
-                           media=prefix + track.parent.media_name,
-                           mediaRange=byte_range)
+            if (prefix.startswith('video')):
+                xml.SubElement(segment_list,
+                               'SegmentURL',
+                               media=prefix + track.parent.media_name,
+                               mediaRange=byte_range,
+                               TI=str(round(TIs[track.order_index-1][i-1],2)),
+                               SI=str(round(SIs[track.order_index-1][i-1],2)))
+            else:
+                xml.SubElement(segment_list,
+                               'SegmentURL',
+                               media=prefix + track.parent.media_name,
+                               mediaRange=byte_range)
         else:
-            xml.SubElement(segment_list,
-                           'SegmentURL',
-                           media=prefix + (SEGMENT_URL_PATTERN % i))
+            if (prefix.startswith('video')):
+                xml.SubElement(segment_list,
+                               'SegmentURL',
+                               media=prefix + (SEGMENT_URL_PATTERN % i),
+                               TI=str(round(TIs[track.order_index-1][i-1],2)),
+                               SI=str(round(SIs[track.order_index-1][i-1],2)))
+            else:
+                xml.SubElement(segment_list,
+                               'SegmentURL',
+                               media=prefix + (SEGMENT_URL_PATTERN % i))
         i += 1
 
 
@@ -1058,7 +1088,7 @@ def main():
         default_exec_dir = path.join(SCRIPT_PATH, 'bin')
     if not path.exists(default_exec_dir):
         default_exec_dir = path.join(SCRIPT_PATH, '..', 'bin')
-
+    
     # parse options
     parser = OptionParser(usage="%prog [options] <media-file> [<media-file> ...]",
                           description="Each <media-file> is the path to a fragmented MP4 file, optionally prefixed with a stream selector delimited by [ and ]. The same input MP4 file may be repeated, provided that the stream selector prefixes select different streams. Version " + VERSION + " r" + SDK_REVISION)
@@ -1072,6 +1102,8 @@ def main():
                       help="Allow output to an existing directory", default=False)
     parser.add_option('', '--mpd-name', dest="mpd_filename",
                       help="MPD file name", metavar="<filename>", default='stream.mpd')
+    parser.add_option('-s', '--segment-size', dest='segment_size', type='int',
+                      help="Video segment size in frames (default: 3*fps)")
     parser.add_option('', '--profiles', dest='profiles',
                       help="Comma-separated list of one or more profile(s). Complete profile names can be used, or profile aliases ('live'='"+ISOFF_LIVE_PROFILE+"', 'on-demand'='"+ISOFF_ON_DEMAND_PROFILE+"', 'hbbtv-1.5='"+HBBTV_15_ISOFF_LIVE_PROFILE+"')", default='live',
                       metavar="<profiles>")
@@ -1171,7 +1203,7 @@ def main():
         sys.exit(1)
     global Options
     Options = options
-
+    
     # set some synthetic (not from command line) options
     options.on_demand = False
 
@@ -1294,6 +1326,9 @@ def main():
     # parse media sources syntax
     media_sources = [MediaSource(source) for source in args]
 
+    if not options.segment_size:
+        options.segment_size = 100
+    
     # create the output directory
     severity = 'ERROR'
     if options.no_media: severity = 'WARNING'
@@ -1565,22 +1600,34 @@ def main():
                     MakeNewDir(out_dir)
                 for audio_track in tracks:
                     if len(tracks) > 1:
-                        out_dir = path.join(out_dir, str(audio_track.order_index))
-                        MakeNewDir(out_dir)
+                        out_dir_tmp = path.join(out_dir, str(audio_track.order_index))
+                        MakeNewDir(out_dir_tmp)
+                    else:
+                        out_dir_tmp = out_dir
                     print 'Splitting media file (audio)', GetMappedFileName(audio_track.parent.media_source.filename)
                     Mp4Split(options,
                              audio_track.parent.media_source.filename,
                              track_id               = str(audio_track.id),
                              pattern_parameters     = 'N',
                              start_number           = '1',
-                             init_segment           = path.join(out_dir, audio_track.init_segment_name),
-                             media_segment          = path.join(out_dir, SEGMENT_PATTERN))
+                             init_segment           = path.join(out_dir_tmp, audio_track.init_segment_name),
+                             media_segment          = path.join(out_dir_tmp, SEGMENT_PATTERN))
 
             if len(video_tracks):
                 MakeNewDir(path.join(options.output_dir, 'video'))
             for video_track in video_tracks:
                 out_dir = path.join(options.output_dir, 'video', str(video_track.order_index))
                 MakeNewDir(out_dir)
+                
+                #zhanghui
+                cmd = default_exec_dir+ '\\TIandSIprocmd -i "%s" -s %d' % (GetMappedFileName(video_track.parent.media_source.filename),options.segment_size)
+                result=run_command_output(options, cmd)
+                TI,SI=result.split('||',1)
+                ti_arr = [float(x) for x in TI.split(',')]
+                si_arr = [float(x) for x in SI.split(',')]
+                TIs.append(ti_arr)
+                SIs.append(si_arr)
+                    
                 print 'Splitting media file (video)', GetMappedFileName(video_track.parent.media_source.filename)
                 Mp4Split(Options,
                          video_track.parent.media_source.filename,

@@ -3,6 +3,8 @@
 Tool to generated DASH content using command line
 一个可以生成DASH媒体内容和MPD的工具
 
+Note: When using segmentList, We will log TI and SI information in MPD, you can turn off this by modifying source code.
+
 Dependencies:
 MP4Box and FFmpeg
 
