@@ -6,7 +6,7 @@ Tool to generated DASH content using command line
 Note: When using segmentList, We will log TI and SI information in MPD, you can turn off this by modifying source code.
 
 Dependencies:
-MP4Box and FFmpeg
+MP4Dash and FFmpeg
 
 Sample CmdLine:
 dashencode.bat -v -d -f --encfiles-output-dir=dashencode -b 100,300 -a 64,128 -r 512x288,640x360 -s 60 -o dashtest --mpd-name=cuc_ieschool.mpd --use-segment-timeline cuc_ieschool.mp4
